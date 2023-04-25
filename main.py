@@ -1,15 +1,12 @@
 from qiskit.circuit import QuantumCircuit, Parameter
 import matplotlib.pyplot as plt
-import math
 
-desired_state = [
-    1 / math.sqrt(16) * 2,
-    1 / math.sqrt(16) * 2,
-    1 / math.sqrt(16) * -2,
-    1 / math.sqrt(16) * 2]
+theta = Parameter('θ')
 
 qc = QuantumCircuit(2)
-qc.initialize(desired_state, [0,1])
+qc.rz(theta, 0)
+qc.crz(theta, 0, 1)
+fig = qc.draw(output="mpl")
 
-qc.decompose().decompose().decompose().decompose().decompose().draw(output="mpl")
+# Display the figure in a plot window
 plt.show()
