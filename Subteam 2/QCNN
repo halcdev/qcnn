@@ -1,0 +1,128 @@
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torchvision.transforms as transforms
+from torchvision import datasets
+import qiskit
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile, assemble
+from qiskit.visualization import plot_histogram
+from qiskit.circuit import Parameter
+import numpy as np
+
+# Step 1: Define the classical CNN architecture
+class ClassicalCNN(nn.Module):
+    def __init__(self):
+        super(ClassicalCNN, self).__init__()
+        self.conv1 = nn.Conv2d(1, 6, 3)
+        self.pool1 = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 3)
+        self.pool2 = nn.MaxPool2d(2, 2)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 10)
+
+    def forward(self, x):
+        x = self.pool1(torch.relu(self.conv1(x)))
+        x = self.pool2(torch.relu(self.conv2(x)))
+        x = x.view(-1, 16 * 5 * 5)
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+# Step 2: Convert the classical CNN into a QCNN
+def quantum_convolution_layer(qc, input_qubits, output_qubits, filter_size):
+    # Apply controlled gates for the convolution operation
+    for i, input_qubit in enumerate(input_qubits):
+        for j, output_qubit in enumerate(output_qubits):
+            # Define a parameterized rotation gate
+            theta = Parameter(f'theta_{i}_{j}')
+            qc.rz(theta, output_qubit)
+            qc.cx(input_qubit, output_qubit)
+
+    # Apply pooling operation (e.g., quantum amplitude amplification)
+    for output_qubit in output_qubits:
+        qc.h(output_qubit)
+        qc.x(output_qubit)
+    qc.mcx(output_qubits[:-1], output_qubits[-1])
+    for output_qubit in output_qubits:
+        qc.x(output_qubit)
+        qc.h(output_qubit)
+
+# Step 3: Define the QCNN model using Qiskit
+class QCNN():
+    def __init__(self, classical_model):
+        self.classical_model = classical_model
+        self.qcnn_model = QuantumCircuit()
+        self.input_qubits = QuantumRegister(2, 'input')
+        self.output_qubits = QuantumRegister(2, 'output')
+        self.aux_qubits = QuantumRegister(1, 'aux')
+        self.c = ClassicalRegister(2, 'c')
+        self.qcnn_model.add_register(self.input_qubits, self.output_qubits, self.aux_qubits, self.c)
+        self.build()
+
+    def build(self):
+        # Initialize input qubits
+        self.qcnn_model.rx(0.785, self.input_qubits[0])
+        self.qcnn_model.rx(0.785, self.input_qubits[1])
+
+        # Apply quantum convolution layer
+        quantum_convolution_layer(self.qcnn_model, self.input_qubits, self.output_qubits, filter_size=3)
+
+        # Measure output qubits
+        self.qcnn_model.measure(self.output_qubits, self.c)
+
+    def forward(self, x):
+        backend = qiskit.Aer.get_backend('qasm_simulator')
+        job = qiskit.execute(self.qcnn_model, backend, shots=1)
+        result = job.result().get_counts()
+        return result
+
+# Step 4: Train the QCNN
+def train_qcnn(qcnn_model, trainloader):
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(qcnn_model.classical_model.parameters(), lr=0.01, momentum=0.9)
+
+    for epoch in range(5):
+        running_loss = 0.0
+        for i, data in enumerate(trainloader, 0):
+            inputs, labels = data
+            outputs = qcnn_model.forward(inputs)
+            loss = criterion(outputs, labels)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+            if i % 2000 == 1999:
+                print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 2000))
+                running_loss = 0.0
+
+    print("Training Complete")
+
+# Step 5: Evaluate the QCNN
+def evaluate_qcnn(qcnn_model, testloader):
+    correct = 0
+    total = 0
+
+    with torch.no_grad():
+        for data in testloader:
+            images, labels = data
+            outputs = qcnn_model.forward(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    print('Accuracy: %.2f %%' % (100 * correct / total))
+
+# Step 6: Main program
+if __name__ == '__main__':
+    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+
+    trainset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=5, shuffle=True, num_workers=2)
+
+    testset = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=5, shuffle=False, num_workers=2)
+
+    classical_model = ClassicalCNN()
+    qcnn_model = QCNN(classical_model)
+    train_qcnn(qcnn_model, trainloader)
+    evaluate_qcnn(qcnn_model, testloader)
