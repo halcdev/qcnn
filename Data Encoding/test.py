@@ -20,7 +20,10 @@ job = execute(qc, backend)
 result = job.result()
 statevector = result.get_statevector()
 plot_bloch_multivector(statevector)
-plt.show()
 
-# Decode the dataset and print the values
-print(decode(qc, len(dataset)))
+# Display the original and encoded/decoded values as images
+plt.figure("Original Dataset")
+plt.imshow(dataset.reshape(28, 28), cmap='gray')
+plt.figure("Decoded Dataset")
+plt.imshow(decode(qc).reshape(28, 28), cmap='gray')
+plt.show()
