@@ -43,6 +43,7 @@ def pool_layer(sources, sinks, param_prefix):
     return qc # Return the quantum circuit
 
 
-params = ParameterVector("θ", length=3)
-circuit = pooling_circuit(params)
-circuit.draw("mpl")
+sources = [0, 1]
+sinks = [2, 3]
+circuit = pool_layer(sources, sinks, "θ")
+circuit.decompose().draw("mpl")
