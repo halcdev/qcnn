@@ -4,9 +4,11 @@ import numpy as np
 from qiskit import QuantumCircuit, Aer, execute
 
 norm = 0
+size = 0
 
 def encode(dataset):
-    global norm
+    global norm, size
+    size = len(dataset)
 
     # Calculate the number of qubits needed to encode the values
     num_qubits = int(np.ceil(np.log2(len(dataset))))
@@ -21,10 +23,10 @@ def encode(dataset):
     # Return the quantum circuit
     return qc
 
-def decode(qc, size):
-    global norm
+def decode(qc):
+    global norm, size
     
-    shots = 100000
+    shots = 1000000
 
     # Measure the quantum circuit
     qc.measure_all()
