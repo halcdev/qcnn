@@ -8,8 +8,13 @@ import numpy as np
 from scipy.ndimage import zoom
 import matplotlib.pyplot as plt
 
+import os
+dir_path = os.path.dirname(os.path.realpath(__file__))
+import sys
+sys.path.insert(1, dir_path)
+
 # Use one image from the MNIST dataset as a test input
-train_images = mnist.read_images('/Users/haddyalchaer/Documents/python_files/qcnn/MNIST/raw/train-images-idx3-ubyte')
+train_images = mnist.read_images(f'{dir_path}/../MNIST/raw/train-images-idx3-ubyte')
 dataset = train_images[0]
 # dataset = [1, 3, 4, 2]
 
