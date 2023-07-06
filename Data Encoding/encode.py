@@ -9,6 +9,8 @@ size = 0
 def encode(dataset):
     global norm, size
     size = len(dataset)
+    print(dataset)
+    print(len(dataset))
 
     # Calculate the number of qubits needed to encode the values
     num_qubits = int(np.ceil(np.log2(len(dataset))))
