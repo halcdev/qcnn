@@ -1,0 +1,5 @@
+
+import importlib, pkg_resources
+importlib.reload(pkg_resources)
+import tensorflow as tf
+
