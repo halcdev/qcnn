@@ -35,3 +35,8 @@ def CRCart_conv_layer(kernel_size, info_qs, param_prefix):
     qc = QuantumCircuit(num_qubits)
     qc.append(qc_inst, qubits)
     return qc
+
+
+if __name__ == "__main__":
+    circuit = CRCart_conv_layer(3, 8, "θ")
+    circuit.decompose().draw("mpl")
